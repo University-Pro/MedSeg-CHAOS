@@ -1,0 +1,84 @@
+# Python
+Datasets/
+__pycache__/
+Result/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Data and models
+Datasets/ # (keep structure but ignore actual data)
+Result/**/*.pth
+Result/**/*.log
+*.pth
+*.pt
+*.h5
+*.hdf5
+
+# Logs and outputs
+logs/
+*.log
+output/
+results/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.temp
+
+# Config files
+config.yml
+config.yaml
+secrets.json
+credentials.json
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
