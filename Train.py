@@ -20,8 +20,8 @@ from Utils.LossFunction import CeDiceLoss
 
 # 导入相关网络
 # from Networks.SwinUNet import SwinUNet
-# from Networks.UNet import UNet
-from Networks.Transunet import TransUNet
+from Networks.UNet import UNet
+# from Networks.Transunet import TransUNet
 
 def set_seed(seed_value=42):
     """设置随机种子以保证可复现性"""
@@ -202,10 +202,10 @@ if __name__ == "__main__":
 
     # 3. 实例化模型
     # model = SwinUNet(img_size=256, in_chans=3, num_classes=option.num_classes, embed_dim=96, depths=[2, 2, 6, 2], depths_decoder=[2, 2, 6, 2], num_heads=[3, 6, 12, 24], window_size=8).to(device=device)
-    # model = UNet(n_channels=3, n_classes=option.num_classes).to(device=device)
+    model = UNet(n_channels=3, n_classes=option.num_classes).to(device=device)
     # model = TransUNet(img_dim=256, in_channels=3, out_channels=128, head_num=8, mlp_dim=512, block_num=8, patch_dim=16, class_num=5).to(device=device) # Transunet_s
     # model = TransUNet(img_dim=256, in_channels=3, out_channels=128, head_num=16, mlp_dim=3072, block_num=12, patch_dim=16, class_num=option.num_classes).to(device=device) # Transunet_m
-    model = TransUNet(img_dim=256, in_channels=3, out_channels=128, head_num=16, mlp_dim=4096, block_num=24, patch_dim=16, class_num=option.num_classes).to(device=device) # Transunet_l
+    # model = TransUNet(img_dim=256, in_channels=3, out_channels=128, head_num=16, mlp_dim=4096, block_num=24, patch_dim=16, class_num=option.num_classes).to(device=device) # Transunet_l
     
 
     # 如果继续训练

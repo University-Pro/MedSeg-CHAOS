@@ -32,7 +32,7 @@ def setup_logging(log_file):
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S',
-                        handlers=[logging.FileHandler(log_file, mode='w'),
+                        handlers=[logging.FileHandler(log_file, mode='a'),
                                   logging.StreamHandler()])
 
 def calculate_metric_per_case(pred, gt):
@@ -76,6 +76,8 @@ def test(args):
     # 1. 设置设备
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logging.info(f"Testing on device: {device}")
+    logging.info("=" * 60)
+    logging.info(f"Testing model: {args.model_path}")
 
     # 2. 加载数据
     test_transform = CHAOSTransforms(mode="test")
@@ -88,7 +90,7 @@ def test(args):
 
     # 3. 加载模型
     model = TransUNet(img_dim=256, in_channels=3, out_channels=128, head_num=16, mlp_dim=3072, block_num=12, patch_dim=16, class_num=5).to(device=device) # Transunet_m
-    model = TransUNet(img_dim=256, in_channels=3, out_channels=128, head_num=16, mlp_dim=4096, block_num=24, patch_dim=16, class_num=5).to(device=device) # Transunet_l
+    # model = TransUNet(img_dim=256, in_channels=3, out_channels=128, head_num=16, mlp_dim=4096, block_num=24, patch_dim=16, class_num=5).to(device=device) # Transunet_l
     # model = TransUNet(img_dim=256, in_channels=3, out_channels=128, head_num=8, mlp_dim=512, block_num=8, patch_dim=16, class_num=5).to(device=device) # Transunet_s
     # model = UNet(n_channels=3, n_classes=args.num_classes).to(device)
     # model = SwinUNet(img_size=256, in_chans=3, num_classes=args.num_classes, embed_dim=192, depths=[2,2,6,2], depths_decoder=[2,2,6,2], num_heads=[3,6,12,24], window_size=8).to(device)
