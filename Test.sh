@@ -4,9 +4,9 @@
 # 用法：./Test.sh [--pth_dir PTH_DIR] [--base_dir BASE_DIR] [--log_path LOG_PATH]
 
 # 默认参数
-PTH_DIR="./Result/TransUNet_M/Chaos/Pth"
+PTH_DIR="./Result/SwinUNet/Chaos/Pth"
 BASE_DIR="./Datasets/Chaos"
-LOG_PATH="./Result/TransUNet_M/Chaos/Test.log"
+LOG_PATH="./Result/SwinUNet/Chaos/Test.log"
 
 # 检查参数是否存在
 if [[ ! -d "$PTH_DIR" ]]; then

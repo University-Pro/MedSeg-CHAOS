@@ -14,7 +14,8 @@ from DataLoader import CHAOSMultiModalDataset, CHAOSTransforms
 # from Networks.DLKUNet_S import UNet
 # from Networks.SwinUNet import SwinUNet
 # from Networks.UNet import UNet
-from Networks.Transunet import TransUNet
+# from Networks.Transunet import TransUNet
+from Networks.SwinUNet import swin_unet_base
 
 # CHAOS 数据集通常定义的类别名称
 CLASS_NAMES = {
@@ -89,7 +90,8 @@ def test(args):
     logging.info(f"Test dataset size: {len(test_dataset)}")
 
     # 3. 加载模型
-    model = TransUNet(img_dim=256, in_channels=3, out_channels=128, head_num=16, mlp_dim=3072, block_num=12, patch_dim=16, class_num=5).to(device=device) # Transunet_m
+    model = swin_unet_base(img_size=256, in_chans=3, num_classes=5).to(device) # SwinUNet
+    # model = TransUNet(img_dim=256, in_channels=3, out_channels=128, head_num=16, mlp_dim=3072, block_num=12, patch_dim=16, class_num=5).to(device=device) # Transunet_m
     # model = TransUNet(img_dim=256, in_channels=3, out_channels=128, head_num=16, mlp_dim=4096, block_num=24, patch_dim=16, class_num=5).to(device=device) # Transunet_l
     # model = TransUNet(img_dim=256, in_channels=3, out_channels=128, head_num=8, mlp_dim=512, block_num=8, patch_dim=16, class_num=5).to(device=device) # Transunet_s
     # model = UNet(n_channels=3, n_classes=args.num_classes).to(device)

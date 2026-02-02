@@ -636,7 +636,7 @@ def swin_unet_base(**kwargs):
 if __name__ == "__main__":
     print("Testing Swin-UNet...")
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    x = torch.randn(2, 4, 256, 256).to(device)
-    model = swin_unet_base(img_size=256, in_chans=4, num_classes=5).to(device)
+    x = torch.randn(2, 3, 256, 256).to(device)
+    model = swin_unet_base(img_size=256, in_chans=3, num_classes=5).to(device)
     y = model(x)
     print(f"Input: {x.shape} -> Output: {y.shape}")
