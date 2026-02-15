@@ -21,6 +21,7 @@ from rich.progress import (
     TimeRemainingColumn,
     TransferSpeedColumn,
     TaskProgressColumn,
+    SpinnerColumn
 )
 from glob import glob
 
@@ -127,23 +128,31 @@ def train_model(model, train_dataset, epochs=300, batch_size=12, learning_rate=1
         device = torch.device("cpu")
 
     console = Console()
-    progress_columns = [
-        TextColumn("[bold cyan]{task.description}"),
-        BarColumn(bar_width=None, complete_style="bright_magenta"),
+    progress = Progress(
+        SpinnerColumn(), 
+        TextColumn("[bold blue]{task.description}"),
+        BarColumn(bar_width=None, complete_style="bright_magenta"), # 彩色渐变条
         TaskProgressColumn(),
-        TransferSpeedColumn(),
         TimeRemainingColumn(),
-    ]
+        TextColumn("[bold yellow]{task.fields[postfix]}"), # 用于显示动态 Loss
+    )
 
-    with Progress(*progress_columns, console=console, refresh_per_second=10) as progress:
+    with progress:
         for epoch in range(epochs):
             running_loss = 0.0
             valid_batches = 0
-            task = progress.add_task(f"Epoch {epoch+1}/{epochs}", total=len(train_loader))
+
+            # 创建当前 epoch 的任务
+            task_id = progress.add_task(
+                f"Epoch {epoch+1}/{epochs}", 
+                total=len(train_loader), 
+                postfix="Wait..."
+            )
 
             for i_batch, sampled_batch in enumerate(train_loader):
+                # 过滤掉 None 数据
                 if sampled_batch is None:
-                    progress.advance(task)
+                    progress.advance(task_id)
                     continue
 
                 images = sampled_batch['image'].to(device)
@@ -158,24 +167,30 @@ def train_model(model, train_dataset, epochs=300, batch_size=12, learning_rate=1
                 current_loss = loss.item()
                 running_loss += current_loss
                 valid_batches += 1
-
                 avg_loss = running_loss / valid_batches if valid_batches else 0.0
+                
+                # 更新进度条和日志
                 progress.update(
-                    task,
+                    task_id,
                     advance=1,
-                    description=f"[bold green]Epoch {epoch+1}/{epochs}",
+                    postfix=f"Loss: {current_loss:.4f} | Avg: {avg_loss:.4f}"
                 )
-                progress.console.log(f"[yellow]Loss:[/yellow] {current_loss:.4f} [bright_blue]Avg:[/bright_blue] {avg_loss:.4f}")
             
+            # epoch结束后的逻辑
             if valid_batches > 0:
                 epoch_loss = running_loss / valid_batches
             else:
                 epoch_loss = 0.0
-                
+            
+
             current_lr = scheduler.get_last_lr()[0]
+            progress.console.print(f"[bold green]✓ Epoch {epoch+1} Completed.[/] Avg Loss: {epoch_loss:.4f}, LR: {current_lr:.6f}")
             logging.info(f"Epoch {epoch+1}/{epochs}, Average Loss: {epoch_loss:.4f}, Learning Rate: {current_lr}")
 
             scheduler.step()
+            
+            # 移除当前 epoch 的任务，为下一个 epoch 创建新的任务
+            progress.remove_task(task_id)
 
             # 每 20 个 epoch 保存一次模型
             if (epoch + 1) % 20 == 0:
