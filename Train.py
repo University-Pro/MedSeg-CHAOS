@@ -12,14 +12,24 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import StepLR
-import tqdm
+# 导入新的进度条显示
+from rich.console import Console
+from rich.progress import (
+    Progress,
+    BarColumn,
+    TextColumn,
+    TimeRemainingColumn,
+    TransferSpeedColumn,
+    TaskProgressColumn,
+)
 from glob import glob
 
 from DataLoader import CHAOSMultiModalDataset, CHAOSTransforms
 from Utils.LossFunction import CeDiceLoss
 
 # 导入相关网络
-from Networks.SwinUNet import swin_unet_base
+# from Networks.SwinUNet import swin_unet_base
+from Networks.SwinUNet import swin_unet_small
 # from Networks.DLKUNet_S import UNet
 # from Networks.SwinUNet import SwinUNet
 # from Networks.UNet import UNet
@@ -116,60 +126,70 @@ def train_model(model, train_dataset, epochs=300, batch_size=12, learning_rate=1
     else:
         device = torch.device("cpu")
 
-    for epoch in range(epochs):
-        running_loss = 0.0
-        valid_batches = 0
-        
-        pbar = tqdm.tqdm(total=len(train_loader), desc=f'Epoch {epoch+1}/{epochs}', bar_format="{l_bar}{bar:10}{r_bar}{bar:-10b}")
+    console = Console()
+    progress_columns = [
+        TextColumn("[bold cyan]{task.description}"),
+        BarColumn(bar_width=None, complete_style="bright_magenta"),
+        TaskProgressColumn(),
+        TransferSpeedColumn(),
+        TimeRemainingColumn(),
+    ]
 
-        for i_batch, sampled_batch in enumerate(train_loader):
-            if sampled_batch is None:
-                pbar.update(1)
-                continue
+    with Progress(*progress_columns, console=console, refresh_per_second=10) as progress:
+        for epoch in range(epochs):
+            running_loss = 0.0
+            valid_batches = 0
+            task = progress.add_task(f"Epoch {epoch+1}/{epochs}", total=len(train_loader))
 
-            images = sampled_batch['image'].to(device)
-            labels = sampled_batch['label'].to(device)
+            for i_batch, sampled_batch in enumerate(train_loader):
+                if sampled_batch is None:
+                    progress.advance(task)
+                    continue
+
+                images = sampled_batch['image'].to(device)
+                labels = sampled_batch['label'].to(device)
+
+                optimizer.zero_grad()
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+
+                current_loss = loss.item()
+                running_loss += current_loss
+                valid_batches += 1
+
+                avg_loss = running_loss / valid_batches if valid_batches else 0.0
+                progress.update(
+                    task,
+                    advance=1,
+                    description=f"[bold green]Epoch {epoch+1}/{epochs}",
+                )
+                progress.console.log(f"[yellow]Loss:[/yellow] {current_loss:.4f} [bright_blue]Avg:[/bright_blue] {avg_loss:.4f}")
             
-            optimizer.zero_grad()
-            outputs = model(images)
-
-            loss = criterion(outputs, labels)
-
-            loss.backward()
-            optimizer.step()
-
-            current_loss = loss.item()
-            running_loss += current_loss
-            valid_batches += 1
-            
-            pbar.set_postfix({'Loss': f'{current_loss:.4f}', 'AvgLoss': f'{running_loss/valid_batches:.4f}'})
-            pbar.update(1)
-        
-        pbar.close()
-        
-        if valid_batches > 0:
-            epoch_loss = running_loss / valid_batches
-        else:
-            epoch_loss = 0.0
-            
-        current_lr = scheduler.get_last_lr()[0]
-        logging.info(f"Epoch {epoch+1}/{epochs}, Average Loss: {epoch_loss:.4f}, Learning Rate: {current_lr}")
-
-        scheduler.step()
-
-        # 每 20 个 epoch 保存一次模型
-        if (epoch + 1) % 20 == 0:
-            if not os.path.exists(save_path):
-                os.makedirs(save_path)
-            temp_path = os.path.join(save_path, f'model_epoch_{epoch+1}_checkpoint.pth')
-            
-            # 如果使用了 DataParallel，保存时建议存 module.state_dict()
-            if isinstance(model, torch.nn.DataParallel):
-                torch.save(model.module.state_dict(), temp_path)
+            if valid_batches > 0:
+                epoch_loss = running_loss / valid_batches
             else:
-                torch.save(model.state_dict(), temp_path)
+                epoch_loss = 0.0
+                
+            current_lr = scheduler.get_last_lr()[0]
+            logging.info(f"Epoch {epoch+1}/{epochs}, Average Loss: {epoch_loss:.4f}, Learning Rate: {current_lr}")
 
-            logging.info(f"Saved checkpoint at epoch {epoch+1} at {temp_path}")
+            scheduler.step()
+
+            # 每 20 个 epoch 保存一次模型
+            if (epoch + 1) % 20 == 0:
+                if not os.path.exists(save_path):
+                    os.makedirs(save_path)
+                temp_path = os.path.join(save_path, f'model_epoch_{epoch+1}_checkpoint.pth')
+                
+                # 如果使用了 DataParallel，保存时建议存 module.state_dict()
+                if isinstance(model, torch.nn.DataParallel):
+                    torch.save(model.module.state_dict(), temp_path)
+                else:
+                    torch.save(model.state_dict(), temp_path)
+
+                logging.info(f"Saved checkpoint at epoch {epoch+1} at {temp_path}")
 
     logging.info("Training Complete!")
 
@@ -203,7 +223,8 @@ if __name__ == "__main__":
     db_train = CHAOSMultiModalDataset(base_dir=option.base_dir, split="train") # 不使用transformer
 
     # 3. 实例化模型
-    model = swin_unet_base(img_size=256, in_chans=3, num_classes=5).to(device) # SwinUNet
+    # model = swin_unet_base(img_size=256, in_chans=3, num_classes=5).to(device) # SwinUNet_Base
+    model = swin_unet_small(img_size=256, in_chans=3, num_classes=option.num_classes).to(device) # SwinUNet_Small
     # model = SwinUNet(img_size=256, in_chans=3, num_classes=option.num_classes, embed_dim=96, depths=[2, 2, 6, 2], depths_decoder=[2, 2, 6, 2], num_heads=[3, 6, 12, 24], window_size=8).to(device=device)
     # model = UNet(n_channels=3, n_classes=option.num_classes).to(device=device)
     # model = TransUNet(img_dim=256, in_channels=3, out_channels=128, head_num=8, mlp_dim=512, block_num=8, patch_dim=16, class_num=5).to(device=device) # Transunet_s
